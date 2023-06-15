@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useMountedState } from "react-use";
 import { BlockEntity, PageEntity } from "@logseq/libs/dist/LSPlugin";
 
-export const triggerIconName = "logseq-heatmap-trigger-icon";
+export const triggerIconName = "logseq-heatmap-score-trigger-icon";
 
 export const useAppVisible = () => {
   const [visible, setVisible] = useState(logseq.isMainUIVisible);

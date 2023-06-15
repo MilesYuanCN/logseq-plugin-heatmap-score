@@ -43,14 +43,14 @@ const useActivities = (startDate: string, endDate: string) => {
       const date1 = new Date(endDate);
 
       const res: any[] = await logseq.DB.datascriptQuery(`
-        [:find (pull ?p [*]) (count ?b)
+        [:find (pull ?p [*]) ?score
          :where
          [?b :block/page ?p]
          [?p :block/journal? true]
          [?p :block/journal-day ?d]
-         [?b :block/content ?c]
-         [(clojure.string/blank? ?c) ?empty]
-         [(not ?empty)]
+         [?b :block/path-refs [:block/name "today_total_score"]]
+         (not (?b :block/content "#today_total_score"))
+         [?b :block/content ?score]
          [(>= ?d ${formatAsParam(date0)})]
          [(<= ?d ${formatAsParam(date1)})]]
      `);
@@ -65,10 +65,10 @@ const useActivities = (startDate: string, endDate: string) => {
     const date0 = new Date(startDate);
     const date1 = new Date(endDate);
     const mapping = Object.fromEntries(
-      rawValue.map(([page, count]: any[]) => {
+      rawValue.map(([page, score]: any[]) => {
         const date = parseJournalDate(page["journal-day"]);
         const datum = {
-          count: count ?? 0,
+          score: score ?? 0,
           date: formatAsDashed(date),
           originalName: page["original-name"] as string,
         };
@@ -85,7 +85,7 @@ const useActivities = (startDate: string, endDate: string) => {
       } else {
         newValues.push({
           date,
-          count: 0,
+          score: 0,
           originalName: formatAsLocale(date),
         });
       }
@@ -106,7 +106,7 @@ const useActivities = (startDate: string, endDate: string) => {
 type Datum = {
   date: string;
   originalName: string;
-  count: number;
+  score: number;
   isActive?: boolean;
 };
 
@@ -125,9 +125,9 @@ const getTooltipDataAttrs = (value: Datum) => {
     return null;
   }
   // Configuration for react-tooltip
-  const count = value.count === 0 ? "No" : value.count;
+  const count = value.score === 0 ? "No" : value.score;
   return {
-    "data-tip": `<strong>${count} journal blocks</strong> on <span class="opacity-70">${value.originalName}</span>`,
+    "data-tip": `<strong>${count} score</strong> on <span class="opacity-70">${value.originalName}</span>`,
   };
 };
 
@@ -151,7 +151,7 @@ const HeatmapChart = ({
   const activities = useActivities(startDate, endDate);
   const counter = useUpdateCounter(activities);
   const weeks = Math.ceil(activities.length / 7);
-  const totalBlocks = activities.reduce((acc, cur) => acc + cur.count, 0);
+  const totalScore = activities.reduce((acc, cur) => acc + +cur.score, 0);
   return (
     <div style={{ width: `${weeks * 16}px` }}>
       <CalendarHeatmap
@@ -161,7 +161,7 @@ const HeatmapChart = ({
         showOutOfRangeDays
         classForValue={(value: Datum) => {
           let classes: string[] = [];
-          classes.push(`color-github-${scaleCount(value?.count ?? 0)}`);
+          classes.push(`color-github-${scaleCount(value?.score ?? 0)}`);
           if (today === value?.date) {
             classes.push("today");
           }
@@ -184,9 +184,9 @@ const HeatmapChart = ({
         }}
       />
       <div className="text-xs text-right mt-1">
-        Total journal blocks during this period:{" "}
+        Average score during this period:{" "}
         <span className="font-medium">
-          {new Intl.NumberFormat().format(totalBlocks)}
+          {new Intl.NumberFormat().format(totalScore/activities.length)}
         </span>
       </div>
       <ReactTooltip key={counter} effect="solid" html />
@@ -264,7 +264,7 @@ function useIconPosition() {
   }, [windowSize]);
 }
 
-export const Heatmap = React.forwardRef<HTMLDivElement>(({}, ref) => {
+export const Heatmap = React.forwardRef<HTMLDivElement>(({ }, ref) => {
   const today = formatAsDashed(new Date());
   const [range, setRange] = React.useState<[string, string] | null>(null);
   const { bottom, right } = useIconPosition();

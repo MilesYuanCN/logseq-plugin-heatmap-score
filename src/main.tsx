@@ -35,14 +35,14 @@ function main() {
       width: 18px;
       height: 18px;
       margin: 2px 0.4em 0 0.4em;
-      background-color: #26a641;
+      background-color: #FF7F50;
       border-radius: 4px;
       border: 1px solid #eee;
     }
   `);
 
   logseq.App.registerUIItem("toolbar", {
-    key: "heatmap-plugin-open",
+    key: "heatmap-score-plugin-open",
     template: `
     <a data-on-click="show">
       <div class="${triggerIconName}"></div>
