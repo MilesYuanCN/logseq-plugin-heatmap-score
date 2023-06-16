@@ -48,8 +48,8 @@ const useActivities = (startDate: string, endDate: string) => {
          [?b :block/page ?p]
          [?p :block/journal? true]
          [?p :block/journal-day ?d]
-         [?b :block/path-refs [:block/name "today_total_score"]]
-         (not (?b :block/content "#today_total_score"))
+         [?b :block/path-refs [:block/name "daily_statistic"]]
+         (not (?b :block/content "#daily_statistic"))
          [?b :block/content ?score]
          [(>= ?d ${formatAsParam(date0)})]
          [(<= ?d ${formatAsParam(date1)})]]
@@ -64,17 +64,26 @@ const useActivities = (startDate: string, endDate: string) => {
   return React.useMemo(() => {
     const date0 = new Date(startDate);
     const date1 = new Date(endDate);
-    const mapping = Object.fromEntries(
-      rawValue.map(([page, score]: any[]) => {
-        const date = parseJournalDate(page["journal-day"]);
-        const datum = {
-          score: score ?? 0,
-          date: formatAsDashed(date),
-          originalName: page["original-name"] as string,
-        };
-        return [datum.date, datum];
-      })
-    );
+
+    const datumMap = new Map<string, Datum>();
+    rawValue.forEach(([page, scoreStr]: any[]) => {
+      const date = formatAsDashed(parseJournalDate(page["journal-day"]));
+      // 将形如 "#work_done_score : 2" 的字符串转换为 2
+      const score = parseInt(scoreStr.split(":")[1].trim());
+      var oldScore = 0
+      if (datumMap.has(date)) {
+        oldScore = datumMap.get(date)!.score;
+      }
+      const newDatum = {
+        score: score + oldScore,
+        date: formatAsDashed(date),
+        originalName: page["original-name"] as string,
+      };
+      datumMap.set(date, newDatum);
+    });
+
+
+    const mapping = Object.fromEntries(datumMap.entries());
 
     const totalDays = differenceInDays(date1, date0) + 1;
     const newValues: Datum[] = [];
