@@ -35,7 +35,7 @@ function main() {
       width: 18px;
       height: 18px;
       margin: 2px 0.4em 0 0.4em;
-      background-color: #FF7F50;
+      background-color: #ec1f50;
       border-radius: 4px;
       border: 1px solid #eee;
     }

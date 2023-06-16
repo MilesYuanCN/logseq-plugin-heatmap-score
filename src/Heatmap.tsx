@@ -69,7 +69,10 @@ const useActivities = (startDate: string, endDate: string) => {
     rawValue.forEach(([page, scoreStr]: any[]) => {
       const date = formatAsDashed(parseJournalDate(page["journal-day"]));
       // 将形如 "#work_done_score : 2" 的字符串转换为 2
-      const score = parseInt(scoreStr.split(":")[1].trim());
+      var score = parseInt(scoreStr.split(":")[1].trim());
+      if (!(score > 0)) {
+        score = 0;
+      }
       var oldScore = 0
       if (datumMap.has(date)) {
         oldScore = datumMap.get(date)!.score;
@@ -119,13 +122,37 @@ type Datum = {
   isActive?: boolean;
 };
 
-// We have 1 ~ 4 scales for now:
-// [1,  10] -> 1
-// [11, 20] -> 2
-// [21, 30] -> 3
-// > 31     -> 4
+// We have 0 ~ 6 scales for now:
+// 0 -> 0
+// [1,  40] -> 1
+// [41, 60] -> 2
+// [61, 70] -> 3
+// [71, 80] -> 4
+// [81, 90] -> 5
+// [91, 100] -> 6
+// [101, 00] -> 1000
+// [-00, -1] -> 1000
+
 const scaleCount = (v: number) => {
-  return Math.ceil(Math.min(v, 40) / 10);
+  if (v < 0) {
+    return 1000;
+  } else if (v == 0) {
+    return 0;
+  } else if (v < 40) {
+    return 1;
+  } else if (v < 60) {
+    return 2;
+  } else if (v < 70) {
+    return 3;
+  } else if (v < 80) {
+    return 4;
+  } else if (v < 90) {
+    return 5;
+  } else if (v <= 100) {
+    return 6;
+  } else {
+    return 1000;
+  }  
 };
 
 const getTooltipDataAttrs = (value: Datum) => {
@@ -170,7 +197,7 @@ const HeatmapChart = ({
         showOutOfRangeDays
         classForValue={(value: Datum) => {
           let classes: string[] = [];
-          classes.push(`color-github-${scaleCount(value?.score ?? 0)}`);
+          classes.push(`color-github-score-${scaleCount(value?.score ?? 0)}`);
           if (today === value?.date) {
             classes.push("today");
           }
@@ -203,7 +230,7 @@ const HeatmapChart = ({
   );
 };
 
-const NUM_WEEKS = 25; // Half a year
+const NUM_WEEKS = 16; // Half a year
 
 const DateRange = ({
   range,
